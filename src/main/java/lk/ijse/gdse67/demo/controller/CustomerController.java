@@ -1,4 +1,4 @@
-package lk.ijse.gdse67.demo;
+package lk.ijse.gdse67.demo.controller;
 
 import java.io.*;
 import java.sql.Connection;
@@ -11,6 +11,7 @@ import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.*;
 import jakarta.servlet.annotation.*;
+import lk.ijse.gdse67.demo.bo.CustomerBO;
 import lk.ijse.gdse67.demo.dto.CustomerDTO;
 
 import javax.naming.InitialContext;
@@ -18,7 +19,9 @@ import javax.naming.NamingException;
 import javax.sql.DataSource;
 
 @WebServlet( value = "/demo")
-public class HelloServlet extends HttpServlet {
+public class CustomerController extends HttpServlet {
+
+    CustomerBO customerBO = new CustomerBO();
 
     Connection connection;
     @Override
@@ -33,7 +36,6 @@ public class HelloServlet extends HttpServlet {
         }
     }
 
-    static String SAVE_STUDENT ="INSERT INTO customer(id,name,city,telephone) VALUES(?,?,?,?)";
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -42,22 +44,19 @@ public class HelloServlet extends HttpServlet {
         }
 
         Jsonb jsonb = JsonbBuilder.create();
-        CustomerDTO studentDto = jsonb.fromJson(req.getReader(), CustomerDTO.class);
+        CustomerDTO customerDTO = jsonb.fromJson(req.getReader(), CustomerDTO.class);
 
-        try {
-            PreparedStatement ps = connection.prepareStatement(SAVE_STUDENT);
-            ps.setString(1,studentDto.getId());
-            ps.setString(2,studentDto.getName());
-            ps.setString(3,studentDto.getCity());
-            ps.setString(4,studentDto.getTelephone());
+        try (var writer = resp.getWriter()){
+            boolean saved = customerBO.saveCustomer(customerDTO, connection);
 
-            if (ps.executeUpdate()>0){
-                resp.getWriter().write("saved");
+            if (saved){
+                writer.write("saved");
             }else {
-                resp.getWriter().write("not");
+                writer.write("not saved");
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+
     }
 }
